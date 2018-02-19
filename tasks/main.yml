@@ -11,9 +11,16 @@
 - name: Adds user if not exists
   user:
     name: "{{ plenv.user }}"
-    
+
+- name: Get Home Directory
+  getent:
+    database: passwd
+    key: "{{ plenv.user }}"
+    split: ":"
+  become: yes
+
 - name: exist plenv
-  stat: path={{ plenv.bin }}
+  stat: path="{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv"
   register: exist_plenv
   become: yes
   become_user: "{{ plenv.user }}"
@@ -21,12 +28,12 @@
 
 - name: install plenv
   when: not exist_plenv.stat.exists
-  git: repo={{ plenv.url }} dest={{ home_path }}/.plenv clone=yes
+  git: repo={{ plenv.url }} dest={{ getent_passwd[plenv.user][4] }}/.plenv clone=yes
   become: yes
   become_user: "{{ plenv.user }}"
 
 - name: exist perl build
-  stat: path={{ perl_build.path }}
+  stat: path={{ getent_passwd[plenv.user][4] }}/.plenv/plugins/perl-build
   register: exist_perl_build
   become: yes
   become_user: "{{ plenv.user }}"
@@ -34,7 +41,7 @@
 
 - name: install perl build
   when: not exist_perl_build.stat.exists
-  git: repo={{ perl_build.url }} dest={{ perl_build.path }} clone=yes
+  git: repo={{ perl_build.url }} dest="{{ getent_passwd[plenv.user][4] }}/.plenv/plugins/perl-build" clone=yes
   become: yes
   become_user: "{{ plenv.user }}"
 
@@ -43,7 +50,7 @@
   become: yes
 
 - name: exist version
-  shell: "{{ plenv.bin }} versions | grep {{ plenv.local }} | wc -l"
+  shell: "{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv versions | grep {{ plenv.local }} | wc -l"
   register: exist_version
   become: yes
   become_user: "{{ plenv.user }}"
@@ -51,38 +58,38 @@
 
 - name: install perl
   when: exist_version.stdout == "0"
-  shell: "{{ plenv.bin }} install {{ plenv_perl_flags }} {{ plenv.local }}"
+  shell: "{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv install {{ plenv_perl_flags }} {{ plenv.local }}"
   become: yes
   become_user: "{{ plenv.user }}"
 
 - name: "check local version"
-  shell: "{{ plenv.bin }} local | grep {{ plenv.local }} | wc -l"
+  shell: "{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv local | grep {{ plenv.local }} | wc -l"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ getent_passwd[plenv.user][4] }}/"
   register: check_version
   become: yes
   become_user: "{{ plenv.user }}"
   changed_when: false
 
 - name: "set local perl"
-  shell: "{{ plenv.bin }} local {{ plenv.local }} && {{ plenv.bin }} global {{ plenv.local }} && {{ plenv.bin }} rehash"
+  shell: "{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv local {{ plenv.local }} && {{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv global {{ plenv.local }} && {{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv rehash"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ getent_passwd[plenv.user][4] }}/"
   become: yes
   become_user: "{{ plenv.user }}"
   when: check_version.stdout != "1"
 
 - name: exist cpanm
-  stat: path={{ home_path }}/.plenv/versions/{{ plenv.local }}/bin/cpanm
+  stat: path={{ getent_passwd[plenv.user][4] }}/.plenv/versions/{{ plenv.local }}/bin/cpanm
   register: exist_cpanm
   become: yes
   become_user: "{{ plenv.user }}"
   changed_when: false
 
 - name: install cpanm
-  shell: "{{ plenv.bin }} install-cpanm && {{ plenv.bin }} exec cpanm Carton && {{ plenv.bin }} rehash"
+  shell: "{{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv install-cpanm && {{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv exec cpanm Carton && {{ getent_passwd[plenv.user][4] }}/.plenv/bin/plenv rehash"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ getent_passwd[plenv.user][4] }}/"
   become: yes
   become_user: "{{ plenv.user }}"
   when: not exist_cpanm.stat.exists
