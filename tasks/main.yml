@@ -13,7 +13,7 @@
     name: "{{ plenv.user }}"
     
 - name: exist plenv
-  stat: path={{ plenv.bin }}
+  stat: path="{{ ansible_env.HOME }}/.plenv/bin/plenv"
   register: exist_plenv
   become: yes
   become_user: "{{ plenv.user }}"
@@ -21,7 +21,7 @@
 
 - name: install plenv
   when: not exist_plenv.stat.exists
-  git: repo={{ plenv.url }} dest={{ home_path }}/.plenv clone=yes
+  git: repo={{ plenv.url }} dest={{ ansible_env.HOME }}/.plenv clone=yes
   become: yes
   become_user: "{{ plenv.user }}"
 
@@ -58,7 +58,7 @@
 - name: "check local version"
   shell: "{{ plenv.bin }} local | grep {{ plenv.local }} | wc -l"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ ansible_env.HOME }}/"
   register: check_version
   become: yes
   become_user: "{{ plenv.user }}"
@@ -67,13 +67,13 @@
 - name: "set local perl"
   shell: "{{ plenv.bin }} local {{ plenv.local }} && {{ plenv.bin }} global {{ plenv.local }} && {{ plenv.bin }} rehash"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ ansible_env.HOME }}/"
   become: yes
   become_user: "{{ plenv.user }}"
   when: check_version.stdout != "1"
 
 - name: exist cpanm
-  stat: path={{ home_path }}/.plenv/versions/{{ plenv.local }}/bin/cpanm
+  stat: path={{ ansible_env.HOME }}/.plenv/versions/{{ plenv.local }}/bin/cpanm
   register: exist_cpanm
   become: yes
   become_user: "{{ plenv.user }}"
@@ -82,7 +82,7 @@
 - name: install cpanm
   shell: "{{ plenv.bin }} install-cpanm && {{ plenv.bin }} exec cpanm Carton && {{ plenv.bin }} rehash"
   args:
-    chdir: "{{ home_path }}/"
+    chdir: "{{ ansible_env.HOME }}/"
   become: yes
   become_user: "{{ plenv.user }}"
   when: not exist_cpanm.stat.exists
